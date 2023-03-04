@@ -8,7 +8,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 import plotly.io as io
 io.renderers.default='browser' #이거 해야 ploty 실시간 확인 가능 fig.show()가 인터넷 창에
-st.set_page_conf황ig(page_title='월간수출입통계',  layout='wide')
+st.set_page_config(page_title='월간수출입통계',  layout='wide')
     
 #%% 데이터 보기좋게 편집
 

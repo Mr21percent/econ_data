@@ -3,3 +3,5 @@ plotly
 streamlit
 streamlit-aggrid
 openpyxl
+lxml
+datetime

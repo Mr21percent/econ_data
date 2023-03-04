@@ -142,9 +142,10 @@ st.header("무역 통계 표")
 
 fourth_layer_column = st.columns(3)
 #fourth_layer_column[1].dataframe(df_for_nice_view_and_download)
-from st_aggrid import AgGrid
+from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
 AgGrid(df_for_nice_view_and_download,
-       height = 300
+       height = 300,
+       columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS
        
        )
 st.download_button(

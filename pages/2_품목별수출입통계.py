@@ -44,9 +44,10 @@ code_df = pd.read_excel("관세청조회코드_v1.0.xlsx", sheet_name="품목코
 
 #%%
 st.header("관세청 품목식별 코드")
-from st_aggrid import AgGrid
+from st_aggrid import AgGrid,GridOptionsBuilder, ColumnsAutoSizeMode
 AgGrid(code_df, 
-       height = 300 )
+       height = 300,
+       columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS)
 #%%
 # 지정 항목 조회 (어느정도로 할지 고민중 - 중분류 하분류)
 st.header("항목 수출입 추세")
@@ -116,7 +117,8 @@ st.write("""
          hsCode : 품목코드
          year : Yyyy.M
          """)
-AgGrid(testDf, height = 500 )
+AgGrid(testDf, height = 500,
+       columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS)
 
 @st.cache_data
 def convert_df(df):

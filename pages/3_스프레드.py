@@ -18,8 +18,8 @@ io.renderers.default='browser'
 st.set_page_config(page_title='금리스프레드조회',  layout='wide')
 st.title("금리 스프레드 (기간 및 신용) 조회")
 
-
 인증키 = st.secrets["BOK_API_KEY"]
+
 통계조회 = "StatisticSearch"
 통계표코드 = "817Y002"
 주기 = "D"
@@ -34,28 +34,86 @@ resample_key = {'년' : "A",
                 '일' : "D",
  }
 
+help_message = "30일 전 대비"
+
+#%% 현재 근황
+now_layer_columns = st.columns(9)
+
+
+mini_url = "https://ecos.bok.or.kr/api/StatisticSearch/" + 인증키 + "/xml/kr/1/100000/817Y002/D/" + (datetime.datetime.today() - datetime.timedelta(days=40)).strftime("%Y%m%d") + "/" + datetime.datetime.today().strftime("%Y%m%d")
+mini_rawDf = pd.read_xml(mini_url, xpath = "//row")
+
+mini_interestRate_Df = mini_rawDf[["ITEM_NAME1", "TIME", "DATA_VALUE"]].dropna().pivot(index = "TIME", columns = "ITEM_NAME1", values ="DATA_VALUE")
+mini_interestRate_Df.index = pd.to_datetime(mini_interestRate_Df.index, format='%Y%m%d')
+
+mini_spreadRate_Df = pd.DataFrame()
+
+
+mini_spreadRate_Df["creditSpread (AA-)"] = mini_interestRate_Df['회사채(3년, AA-)'] - mini_interestRate_Df['국고채(3년)']
+mini_spreadRate_Df["creditSpread (BBB-)"] = mini_interestRate_Df['회사채(3년, BBB-)'] - mini_interestRate_Df['국고채(3년)']
+
+mini_spreadRate_Df["termSpread ( 국고채 10년 - 통안채 2년 )"] = mini_interestRate_Df['국고채(10년)'] - mini_interestRate_Df['통안증권(2년)']
+mini_spreadRate_Df["termSpread ( 국고채 10년 - 국고채 3년 )"] = mini_interestRate_Df['국고채(10년)'] - mini_interestRate_Df['국고채(3년)']
+
+show_spread_df = mini_spreadRate_Df.resample("D").ffill()
+
+
+#%%
+
+now_layer_columns[0].metric("기간스프레드 (국고채 10년 - 국고채 3년)", 
+            "{0:,.2f} %".format(show_spread_df.iloc[-1,3]),  
+            "{0:,.2f}".format(show_spread_df.iloc[-1,3] - show_spread_df.iloc[-31,3]),
+            delta_color="inverse",
+            help=help_message)
+
+now_layer_columns[1].metric("기간스프레드 (국고채 10년 - 통안채 2년",
+            "{0:,.2f} %".format(show_spread_df.iloc[-1,2]),  
+            "{0:,.2f}".format(show_spread_df.iloc[-1,2] - show_spread_df.iloc[-31,2]),
+            delta_color="inverse",
+            help=help_message)
+
+now_layer_columns[2].metric("신용스프레드 (회사채 AA- 3년 - 국고채 3년)",
+            "{0:,.2f} %".format(show_spread_df.iloc[-1,0]),  
+            "{0:,.2f}".format(show_spread_df.iloc[-1,0] - show_spread_df.iloc[-31,0]),
+            delta_color="inverse",
+            help=help_message)
+
+now_layer_columns[3].metric("신용스프레드 (회사채 BBB- 3년 - 국고채 3년)",
+            "{0:,.2f} %".format(show_spread_df.iloc[-1,1] ),  
+            "{0:,.2f}".format(show_spread_df.iloc[-1,1] - show_spread_df.iloc[-31,1] ),
+            delta_color="inverse",
+            help=help_message)
 
 #%% 검색 데이터 받는 위치
-inputWigetColumns = st.columns(3)
 
-# 주기
 
-조회주기 = inputWigetColumns[0].radio(
-    "원하시는 데이터 조회 주기를 선택하시오.",
-    ('년', '분기', '월', '반월', '주', '일'))
+st.subheader("조회 기간 설정")
 
-# 시작일자
-start_d = inputWigetColumns[1].date_input(
-    "조회 시작일을 설정하시오.",
-    value = datetime.date(2020, 1, 1),
-    min_value = datetime.date(2000, 12, 18),
-    max_value = datetime.datetime.today()
-    )
-# 종료일자
-end_d = inputWigetColumns[2].date_input(
-    "조회 종료일을 설정하시오.",
-    min_value = start_d,
-    max_value = datetime.datetime.today())
+with st.form(key='columns_in_form'):
+    
+    inputWigetColumns = st.columns(3)
+    
+    # 주기
+    조회주기 = inputWigetColumns[0].radio(
+        "원하시는 데이터 조회 주기를 선택하시오.",
+        ('년', '분기', '월', '반월', '주', '일'),
+        index=1
+        )
+    
+    # 시작일자
+    start_d = inputWigetColumns[1].date_input(
+        "조회 시작일을 설정하시오.",
+        value = datetime.date(2020, 1, 1),
+        min_value = datetime.date(2000, 12, 18),
+        max_value = datetime.datetime.today()
+        )
+    # 종료일자
+    end_d = inputWigetColumns[2].date_input(
+        "조회 종료일을 설정하시오.",
+        min_value = start_d,
+        max_value = datetime.datetime.today())
+    
+    submit_button = st.form_submit_button( label='제출')
 
 # 통안채 2년의 시작일은 1999/02/10
 # 국고채 3년의 시작일은 1998/11/13
@@ -114,23 +172,23 @@ spreadRate_Df["creditSpread (BBB-)"] = interestRate_Df['회사채(3년, BBB-)'] 
 
 
 
-spreadRate_Df["timeSpread ( 국고채 3년 - Call금리(전체) )"] = interestRate_Df['국고채(3년)'] - interestRate_Df['콜금리(1일, 전체거래)']
-spreadRate_Df["timeSpread ( 국고채 5년 - Call금리(전체) )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['콜금리(1일, 전체거래)']
-spreadRate_Df["timeSpread ( 국고채 10년 - Call금리(전체) )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['콜금리(1일, 전체거래)']
+spreadRate_Df["termSpread ( 국고채 3년 - Call금리(전체) )"] = interestRate_Df['국고채(3년)'] - interestRate_Df['콜금리(1일, 전체거래)']
+spreadRate_Df["termSpread ( 국고채 5년 - Call금리(전체) )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['콜금리(1일, 전체거래)']
+spreadRate_Df["termSpread ( 국고채 10년 - Call금리(전체) )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['콜금리(1일, 전체거래)']
 
-spreadRate_Df["timeSpread ( 국고채 3년 - CD(91일) )"] = interestRate_Df['국고채(3년)'] - interestRate_Df['CD(91일)']
-spreadRate_Df["timeSpread ( 국고채 5년 - CD(91일) )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['CD(91일)']
-spreadRate_Df["timeSpread ( 국고채 10년 - CD(91일) )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['CD(91일)']
+spreadRate_Df["termSpread ( 국고채 3년 - CD(91일) )"] = interestRate_Df['국고채(3년)'] - interestRate_Df['CD(91일)']
+spreadRate_Df["termSpread ( 국고채 5년 - CD(91일) )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['CD(91일)']
+spreadRate_Df["termSpread ( 국고채 10년 - CD(91일) )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['CD(91일)']
 
-spreadRate_Df["timeSpread ( 국고채 3년 - 국고채 1년 )"] = interestRate_Df['국고채(3년)'] - interestRate_Df['국고채(1년)']
-spreadRate_Df["timeSpread ( 국고채 5년 - 국고채 1년 )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['국고채(1년)']
-spreadRate_Df["timeSpread ( 국고채 10년 - 국고채 1년 )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['국고채(1년)']
+spreadRate_Df["termSpread ( 국고채 3년 - 국고채 1년 )"] = interestRate_Df['국고채(3년)'] - interestRate_Df['국고채(1년)']
+spreadRate_Df["termSpread ( 국고채 5년 - 국고채 1년 )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['국고채(1년)']
+spreadRate_Df["termSpread ( 국고채 10년 - 국고채 1년 )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['국고채(1년)']
 
-spreadRate_Df["timeSpread ( 국고채 5년 - 통안채 2년 )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['통안증권(2년)']
-spreadRate_Df["timeSpread ( 국고채 10년 - 통안채 2년 )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['통안증권(2년)']
+spreadRate_Df["termSpread ( 국고채 5년 - 통안채 2년 )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['통안증권(2년)']
+spreadRate_Df["termSpread ( 국고채 10년 - 통안채 2년 )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['통안증권(2년)']
 
-spreadRate_Df["timeSpread ( 국고채 5년 - 국고채 3년 )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['국고채(3년)']
-spreadRate_Df["timeSpread ( 국고채 10년 - 국고채 3년 )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['국고채(3년)']
+spreadRate_Df["termSpread ( 국고채 5년 - 국고채 3년 )"] = interestRate_Df['국고채(5년)'] - interestRate_Df['국고채(3년)']
+spreadRate_Df["termSpread ( 국고채 10년 - 국고채 3년 )"] = interestRate_Df['국고채(10년)'] - interestRate_Df['국고채(3년)']
 
 
 #%% 스프레드 선 차트

@@ -37,7 +37,7 @@ resample_key = {'년' : "A",
 help_message = "30일 전 대비"
 
 #%% 현재 근황
-now_layer_columns = st.columns(9)
+now_layer_columns = st.columns(4)
 
 
 mini_url = "https://ecos.bok.or.kr/api/StatisticSearch/" + 인증키 + "/xml/kr/1/100000/817Y002/D/" + (datetime.datetime.today() - datetime.timedelta(days=40)).strftime("%Y%m%d") + "/" + datetime.datetime.today().strftime("%Y%m%d")

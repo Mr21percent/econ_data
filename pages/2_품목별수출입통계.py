@@ -9,8 +9,7 @@ st.set_page_config(page_title='월간수출입통계',  layout='wide')
     
 
 
-url = "https://apis.data.go.kr/1220000/Itemtrade/getItemtradeList?"
-인증키 = "WELKs76NiwpOK8rD5mIq4CrEEgswzBhwJOEaVc9S5vkmJL7mMUF03SBfmchN9BdnZCERARnfKOVQPNfj8t8mXA=="
+url = "https://apis.data.go.kr/1220000/Itemtrade/getItemtradeList?"￦
 시작년월 = "202201"
 종료년월 = "202212"
 #시작과 종료의 조회기간은 1년이내 기간만 가능합니다
